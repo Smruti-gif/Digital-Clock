@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Digital Watch</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: conic-gradient(from 0deg, red, orange, yellow, green, blue, indigo, violet, red);
+            color: hsl(240, 26%, 96%);
+            text-align: center;
+            padding: 100px;
+        }
+
+        h1 {
+            color: hsl(0, 6%, 97%);
+            font-size: 65px;
+            text-shadow: 0 0 10px rgba(245, 5, 213, 0.964);
+            text-decoration: underline;
+            margin-bottom: 50px;
+        }
+
+        .tab {
+            box-shadow: 0 0 10px rgba(240, 11, 186, 0.964);
+            display: inline-block;
+            margin: 0 10px;
+            padding: 10px 50px;
+            background: #080132;
+            cursor: pointer;
+            border-radius: 10px;
+        }
+
+        .tab.active {
+            background: #06407d;
+        }
+
+        .section {
+            font-size: larger;
+            color: hsl(71, 23%, 91%);
+            background: #ec1d0a;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(248, 245, 245, 0.964);
+            transition: all 0.3s ease;
+            margin: 20px auto;
+            width: 300px;
+            display: none;
+            margin-top: 30px;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .display {
+            font-size: 50px;
+            margin: 10px;
+        }
+
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            border: 1px solid #0b0000;
+            background: #02380e;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0b0000;
+            box-shadow: 0 0 10px rgba(5, 199, 233, 0.964);
+        }
+
+        input[type="time"],
+        input[type="number"] {
+            padding: 5px;
+            font-size: 18px;
+            margin: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1><b><u>Digital Watch</u></b></h1>
+    <div>
+        <div class="tab active" onclick="showTab('clock')">Clock</div>
+        <div class="tab" onclick="showTab('stopwatch')">Stopwatch</div>
+        <div class="tab" onclick="showTab('alarm')">Alarm</div>
+        <div class="tab" onclick="showTab('timer')">Timer</div>
+    </div>
+
+    <div id="clock" class="section active">
+        <div class="display" id="clockDisplay">00:00:00</div>
+    </div>
+
+    <div id="stopwatch" class="section">
+        <div class="display" id="stopwatchDisplay">00:00:00</div>
+        <button onclick="startStopwatch()">Start</button>
+        <button onclick="stopStopwatch()">Stop</button>
+        <button onclick="resetStopwatch()">Reset</button>
+    </div>
+
+    <div id="alarm" class="section">
+        <div class="display">Set Alarm:</div>
+        <input type="time" id="alarmTime">
+        <button onclick="setAlarm()">Set</button>
+        <button onclick="clearAlarm()">Clear</button>
+        <div id="alarmStatus"></div>
+    </div>
+
+    <div id="timer" class="section">
+        <div class="display" id="timerDisplay">00:00:00</div>
+        <input type="number" id="timerMinutes" placeholder="Minutes">
+        <button onclick="startTimer()">Start</button>
+        <button onclick="resetTimer()">Reset</button>
+    </div>
+
+    <script>
+        // Tabs
+        function showTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
+        }
+
+        // Clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clockDisplay').textContent = now.toLocaleTimeString();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Stopwatch
+        let stopwatchTime = 0, stopwatchInterval;
+        function startStopwatch() {
+            if (stopwatchInterval) return;
+            stopwatchInterval = setInterval(() => {
+                stopwatchTime++;
+                updateStopwatchDisplay();
+            }, 1000);
+        }
+        function stopStopwatch() {
+            clearInterval(stopwatchInterval);
+            stopwatchInterval = null;
+        }
+        function resetStopwatch() {
+            stopStopwatch();
+            stopwatchTime = 0;
+            updateStopwatchDisplay();
+        }
+        function updateStopwatchDisplay() {
+            const h = Math.floor(stopwatchTime / 3600);
+            const m = Math.floor((stopwatchTime % 3600) / 60);
+            const s = stopwatchTime % 60;
+            document.getElementById('stopwatchDisplay').textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+        }
+
+        // Alarm
+        let alarmTimeout;
+        function setAlarm() {
+            const alarmInput = document.getElementById('alarmTime').value;
+            if (!alarmInput) return alert("Please set a time.");
+            const alarmDate = new Date();
+            const [h, m] = alarmInput.split(":");
+            alarmDate.setHours(h, m, 0, 0);
+            const now = new Date();
+            const timeToAlarm = alarmDate - now;
+            if (timeToAlarm < 0) return alert("Set a future time.");
+            alarmTimeout = setTimeout(() => {
+                alert("Alarm ringing!");
+            }, timeToAlarm);
+            document.getElementById('alarmStatus').textContent = "Alarm set for " + alarmDate.toLocaleTimeString();
+        }
+        function clearAlarm() {
+            clearTimeout(alarmTimeout);
+            document.getElementById('alarmStatus').textContent = "Alarm cleared.";
+        }
+
+        // Timer
+        let timerSeconds = 0, timerInterval;
+        function startTimer() {
+            const mins = parseInt(document.getElementById('timerMinutes').value);
+            if (isNaN(mins) || mins <= 0) return alert("Enter valid minutes.");
+            timerSeconds = mins * 60;
+            updateTimerDisplay();
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timerSeconds--;
+                if (timerSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    alert("Time's up!");
+                }
+                updateTimerDisplay();
+            }, 1000);
+        }
+        function resetTimer() {
+            clearInterval(timerInterval);
+            timerSeconds = 0;
+            updateTimerDisplay();
+        }
+        function updateTimerDisplay() {
+            const h = Math.floor(timerSeconds / 3600);
+            const m = Math.floor((timerSeconds % 3600) / 60);
+            const s = timerSeconds % 60;
+            document.getElementById('timerDisplay').textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+        }
+
+        function pad(num) {
+            return num.toString().padStart(2, '0');
+        }
+    </script>
+
+</body>
+
+</html>
+<!-- This is a simple digital watch application with clock, stopwatch, alarm, and timer functionalities. The code includes HTML for structure, CSS for styling, and JavaScript for functionality. -->
+<!-- The clock updates every second, the stopwatch can be started, stopped, and reset, the alarm can be set and cleared, and the timer counts down from a specified number of minutes. -->
